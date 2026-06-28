@@ -405,6 +405,18 @@ class SoundcloudBaseIE(InfoExtractor):
             else:
                 thumbnails = [{'url': thumbnail}]
 
+        album_query = query.copy()
+        album_query['limit'] = 1
+        album_info = traverse_obj(self._call_api(
+            f'{self._API_V2_BASE}tracks/{track_id}/albums', track_id, 'Downloading album info JSON',
+            query=album_query, headers=self._HEADERS), ('collection', 0))
+
+        def extract_track_number(tracks):
+            for track_number, track in enumerate(tracks or [], 1):
+                if str(track['id']) == track_id:
+                    return track_number
+            return None
+
         def extract_count(key):
             return int_or_none(info.get(f'{key}_count'))
 
@@ -430,6 +442,10 @@ class SoundcloudBaseIE(InfoExtractor):
             'artists': traverse_obj(info, ('publisher_metadata', 'artist', {str}, filter, all, filter)),
             'formats': formats if not extract_flat else None,
             '__post_extractor': self.extract_comments(track_id),
+            'track_number': traverse_obj(album_info, ('tracks', {extract_track_number}, {int_or_none})),
+            'album': traverse_obj(album_info, ('title', {str_or_none})),
+            'album_artists': traverse_obj(album_info, ('user', 'username', {str_or_none}, filter, all, filter)),
+            'album_type': traverse_obj(album_info, ('set_type', {str_or_none})),
         }
 
     @classmethod
@@ -598,6 +614,10 @@ class SoundcloudIE(SoundcloudBaseIE):
             'genres': ['Dance & EDM'],
             'artists': ['80M'],
             'tags': 'count:4',
+            'track_number': 2,
+            'album': 'Insomnia EP',
+            'album_type': 'ep',
+            'album_artists': ['80M'],
         },
         'params': {'skip_download': 'm3u8'},
         'expected_warnings': ['Original download format is only available for registered users'],
