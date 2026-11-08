@@ -980,12 +980,17 @@ class SoundcloudSetIE(SoundcloudPlaylistBaseIE):
 
 
 class SoundcloudPagedPlaylistBaseIE(SoundcloudBaseIE):
-    def _extract_playlist(self, base_url, playlist_id, playlist_title):
+    def _extract_playlist(self, base_url, playlist_id, playlist_title, user):
         return {
             '_type': 'playlist',
             'id': playlist_id,
             'title': playlist_title,
             'entries': self._entries(base_url, playlist_id),
+            **traverse_obj(user, {
+                'uploader': ('username', {str}),
+                'uploader_id': (('id', 'permalink'), {str_or_none}, any),
+                'uploader_url': ('permalink_url', {url_or_none}),
+            }),
         }
 
     @functools.cached_property
@@ -1074,6 +1079,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '207965082',
             'title': 'Soft Cell (All)',
+            'uploader': 'Soft Cell',
+            'uploader_id': '207965082',
+            'uploader_url': 'https://soundcloud.com/soft-cell-official',
         },
         'playlist_mincount': 28,
     }, {
@@ -1081,6 +1089,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '207965082',
             'title': 'Soft Cell (Tracks)',
+            'uploader': 'Soft Cell',
+            'uploader_id': '207965082',
+            'uploader_url': 'https://soundcloud.com/soft-cell-official',
         },
         'playlist_mincount': 27,
     }, {
@@ -1088,6 +1099,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '207965082',
             'title': 'Soft Cell (Albums)',
+            'uploader': 'Soft Cell',
+            'uploader_id': '207965082',
+            'uploader_url': 'https://soundcloud.com/soft-cell-official',
         },
         'playlist_mincount': 1,
     }, {
@@ -1095,6 +1109,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '12982173',
             'title': 'Jordi / cv (Sets)',
+            'uploader': 'Jordi / cv',
+            'uploader_id': '12982173',
+            'uploader_url': 'https://soundcloud.com/jcv246',
         },
         'playlist_mincount': 2,
     }, {
@@ -1102,6 +1119,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '12982173',
             'title': 'Jordi / cv (Reposts)',
+            'uploader': 'Jordi / cv',
+            'uploader_id': '12982173',
+            'uploader_url': 'https://soundcloud.com/jcv246',
         },
         'playlist_mincount': 6,
     }, {
@@ -1109,6 +1129,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '11817582',
             'title': 'clalberg (Likes)',
+            'uploader': 'clalberg',
+            'uploader_id': '11817582',
+            'uploader_url': 'https://soundcloud.com/clalberg',
         },
         'playlist_mincount': 5,
     }, {
@@ -1116,6 +1139,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '7098329',
             'title': 'Grynpyret (Spotlight)',
+            'uploader': 'Grynpyret',
+            'uploader_id': '7098329',
+            'uploader_url': 'https://soundcloud.com/grynpyret',
         },
         'playlist_mincount': 0,
     }, {
@@ -1123,6 +1149,9 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '992430331',
             'title': '7x11x13-testing (Comments)',
+            'uploader': '7x11x13-testing',
+            'uploader_id': '992430331',
+            'uploader_url': 'https://soundcloud.com/one-thousand-and-one',
         },
         'playlist_mincount': 1,
     }]
@@ -1151,7 +1180,8 @@ class SoundcloudUserIE(SoundcloudPagedPlaylistBaseIE):
         return self._extract_playlist(
             self._API_V2_BASE + self._BASE_URL_MAP[resource] % user['id'],
             str_or_none(user.get('id')),
-            '{} ({})'.format(user['username'], resource.capitalize()))
+            '{} ({})'.format(user['username'], resource.capitalize()),
+            user)
 
 
 class SoundcloudUserPermalinkIE(SoundcloudPagedPlaylistBaseIE):
@@ -1162,8 +1192,11 @@ class SoundcloudUserPermalinkIE(SoundcloudPagedPlaylistBaseIE):
         'info_dict': {
             'id': '30909869',
             'title': 'neilcic',
+            'uploader': 'neilcic',
+            'uploader_id': '30909869',
+            'uploader_url': 'https://soundcloud.com/neilcic',
         },
-        'playlist_mincount': 22,
+        'playlist_mincount': 12,
     }]
 
     def _real_extract(self, url):
@@ -1172,7 +1205,7 @@ class SoundcloudUserPermalinkIE(SoundcloudPagedPlaylistBaseIE):
             self._resolv_url(url), user_id, 'Downloading user info', headers=self._HEADERS)
 
         return self._extract_playlist(
-            f'{self._API_V2_BASE}users/{user["id"]}/tracks', str(user['id']), user.get('username'))
+            f'{self._API_V2_BASE}users/{user["id"]}/tracks', str(user['id']), user.get('username'), user)
 
 
 class SoundcloudTrackStationIE(SoundcloudPagedPlaylistBaseIE):
@@ -1196,7 +1229,7 @@ class SoundcloudTrackStationIE(SoundcloudPagedPlaylistBaseIE):
 
         return self._extract_playlist(
             self._API_V2_BASE + 'stations/{}/tracks'.format(track['id']),
-            track_id, 'Track station: {}'.format(track['title']))
+            track_id, 'Track station: {}'.format(track['title']), None)
 
 
 class SoundcloudRelatedIE(SoundcloudPagedPlaylistBaseIE):
@@ -1244,7 +1277,7 @@ class SoundcloudRelatedIE(SoundcloudPagedPlaylistBaseIE):
 
         return self._extract_playlist(
             self._API_V2_BASE + self._BASE_URL_MAP[relation] % track['id'], str(track['id']),
-            '{} ({})'.format(track.get('title') or slug, relation.capitalize()))
+            '{} ({})'.format(track.get('title') or slug, relation.capitalize()), None)
 
 
 class SoundcloudPlaylistIE(SoundcloudPlaylistBaseIE):
