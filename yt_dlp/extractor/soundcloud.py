@@ -840,6 +840,7 @@ class SoundcloudPlaylistBaseIE(SoundcloudBaseIE):
             'album': ('title', {str}),
             'album_artist': ('user', 'username', {str}),
             'album_type': ('set_type', {str}, {lambda x: x or 'playlist'}),
+            'album_id': ('id', {str}),
         })
         entries = []
         for idx, track in enumerate(tracks, start=1):
