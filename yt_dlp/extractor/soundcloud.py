@@ -836,12 +836,14 @@ class SoundcloudPlaylistBaseIE(SoundcloudBaseIE):
                     'playlistId': playlist_id,
                     'playlistSecretToken': token,
                 }, headers=self._HEADERS)
-        album_info = traverse_obj(playlist, {
-            'album': ('title', {str}),
-            'album_artist': ('user', 'username', {str}),
-            'album_type': ('set_type', {str}, {lambda x: x or 'playlist'}),
-            'album_id': ('id', {str}),
-        })
+        album_info = {
+            'album_id': playlist_id,
+            **traverse_obj(playlist, {
+                'album': ('title', {str}),
+                'album_artist': ('user', 'username', {str}),
+                'album_type': ('set_type', {str}, {lambda x: x or 'playlist'}),
+            }),
+        }
         entries = []
         for idx, track in enumerate(tracks, start=1):
             track_id = str_or_none(track.get('id'))
